@@ -1,79 +1,102 @@
-# Shoe Care ERP — Frontend
+# SoleCare — Oyoq kiyim ta'mirlash boshqaruv tizimi
 
-Ko'p filiallik (multi-tenant) poyabzal tozalash/ta'mirlash SaaS tizimi uchun
-React 19 + TypeScript + Vite frontend.
+## ⚡ Tez ishga tushirish
 
-## Texnologiyalar
-
-- React 19, TypeScript (strict), Vite
-- TailwindCSS v3 + hand-built Shadcn-style UI komponentlar
-- Supabase (auth, database, storage, RLS)
-- React Query (TanStack Query) — data fetching/caching
-- Zustand — global holat (auth)
-- React Hook Form + Zod — formalar va validatsiya
-- Framer Motion — animatsiyalar
-- Recharts — grafiklar
-- jsPDF + qrcode + jsbarcode — PDF chek, QR va shtrix kod
-- jsQR — QR skanerlash (kamera orqali)
-
-## O'rnatish
-
+### 1. O'rnatish
 ```bash
 npm install
 ```
 
-`.env` faylida Supabase ma'lumotlari allaqachon to'ldirilgan:
-
-```
-VITE_SUPABASE_URL=https://pkgysljbccfmvklgwgyj.supabase.co
-VITE_SUPABASE_ANON_KEY=sb_publishable_...
+### 2. .env fayl yarating
+```bash
+cp .env.example .env
 ```
 
-> ⚠️ `sb_secret_...` (secret key) frontendda HECH QACHON ishlatilmasligi kerak —
-> u faqat Telegram bot serveri (backend) uchun.
+`.env` faylini oching va Supabase kalitlarini kiriting:
+```
+VITE_SUPABASE_URL=https://xxxxx.supabase.co
+VITE_SUPABASE_ANON_KEY=eyJ...
+```
+> Kalitlar: **Supabase Dashboard → Settings → API**
 
-## Ishga tushirish
+### 3. Supabase sozlash
+
+**a) SQL Migratsiyalar** — Supabase Dashboard → SQL Editor ga o'ting va bu fayllarni *tartib bilan* ishga tushiring:
+```
+supabase/migrations/0001_initial_schema.sql
+supabase/migrations/0002_rls_policies.sql
+supabase/migrations/0003_storage_and_views.sql
+supabase/migrations/0004_roles_branches_subscriptions_salaries.sql
+```
+
+**b) Storage** — Supabase Dashboard → Storage → New bucket:
+- Name: `order-images`  
+- Public: ✅ yoqiq
+
+**c) Realtime** — Supabase Dashboard → Database → Replication → `orders` jadvali yoqiq
+
+### 4. Seed (ma'lumotlar yuklash)
+`.env` ga qo'shing:
+```
+SUPABASE_SERVICE_ROLE_KEY=eyJ...  ← service_role secret
+SUPER_ADMIN_EMAIL=superadmin@solecare.uz
+SUPER_ADMIN_PASSWORD=Admin123456!
+```
+
+Keyin ishga tushiring:
+```bash
+node seed.mjs
+```
+
+### 5. Ishga tushirish
+```bash
+npm run dev
+# → http://localhost:5173
+```
+
+---
+
+## Login ma'lumotlari (seed dan keyin)
+
+| Rol | Email | Parol |
+|-----|-------|-------|
+| Super Admin | superadmin@solecare.uz | Admin123456! |
+| Direktor | director@solecare.uz | Director123! |
+| Admin 1 | admin1@solecare.uz | Admin1234! |
+| Admin 2 | admin2@solecare.uz | Admin1234! |
+| Ishchi 1 | worker1@solecare.uz | Worker123! |
+| Ishchi 2 | worker2@solecare.uz | Worker123! |
+| Ishchi 3 | worker3@solecare.uz | Worker123! |
+
+---
+
+## Telegram Bot
 
 ```bash
-npm run dev      # development server (http://localhost:5173)
-npm run build    # production build (dist/)
-npm run preview  # production buildni lokal ko'rish
+cd bot
+cp .env.example .env
+# .env ni to'ldiring
+
+npm install
+npm start           # asosiy bot
+npm run notify-worker  # bildirishnoma worker (alohida terminal)
 ```
 
-## Supabase sozlash
-
-Loyihaning Supabase qismi (`supabase/migrations/`) alohida yetkazib berilgan.
-Migratsiyalarni tartib bilan ishlatish kerak:
-
-1. `0001_init.sql` — asosiy jadvallar, RLS, trigger'lar
-2. `0002_seed.sql` — test kompaniya + foydalanuvchi yaratish bo'yicha ko'rsatma
-3. `0003_reviews_and_rankings.sql` — review/rating/ranking funksiyalari
-
-Birinchi foydalanuvchi (super_admin)ni Supabase Dashboard → Authentication
-orqali yaratib, so'ng `users` jadvalida `role = 'super_admin'` va kerakli
-`company_id` ni belgilang.
-
-## Loyiha tuzilmasi
-
-```
-src/
-  app/            # router, layout, providers, nav config
-  pages/          # route komponentlari
-  widgets/        # qayta ishlatiluvchi UI bloklari (StatCard, StatusRail...)
-  features/       # domain logikasi (auth, orders, workers, payments...)
-  shared/         # UI primitivlar, lib, constants, theme
-  types/          # Supabase schema bilan mos TypeScript turlari
-```
+---
 
 ## Rollar
 
-- **super_admin** — barcha filiallarni ko'radi, filiallarni boshqaradi
-- **admin** — o'z filiali: buyurtmalar, xodimlar, moliya, mijozlar, sozlamalar
-- **worker** — buyurtmalar, QR scanner, o'z balansi/reytingi
+| Rol | Sahifalar |
+|-----|-----------|
+| **Super Admin** | Kompaniyalar, Obunalar, Barcha xodimlar |
+| **Director** | Filiallar, Maosh, Statistika, Telegram Bot |
+| **Admin** | Buyurtmalar, Xodimlar, Statistika |
+| **Worker** | Faqat o'z buyurtmalari |
 
-## Hali qilinmagan / keyingi bosqichlar
+---
 
-- Telegram bot (Telegraf.js, alohida Node.js servis) — mijozlar uchun
-  buyurtma kuzatish, chek olish, baholash
-- Push/real-time bildirishnomalar (Supabase Realtime orqali)
-- Xodim/admin yaratish formasi (hozircha Supabase Dashboard orqali)
+## Muammo? Blank page ko'rinsa
+
+1. `.env` faylida `VITE_SUPABASE_URL` va `VITE_SUPABASE_ANON_KEY` to'g'ri ekanini tekshiring
+2. Terminalni qarang — xatolik ko'rsatilgan bo'ladi
+3. `npm run dev` ni qayta ishga tushiring

@@ -22,7 +22,7 @@
 
 const { createClient } = require("@supabase/supabase-js");
 
-const SUPABASE_URL = "https://pkgysljbccfmvklgwgyj.supabase.co";
+const SUPABASE_URL = "https://htvpdmofqzgtrszacmyq.supabase.co";
 const SUPABASE_SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
 const LOGIN_DOMAIN = "shoecare.local";
@@ -310,6 +310,7 @@ async function main() {
     }
 
     console.log("\n4) Worker balanslarini tekshirish...");
+    ex
     const { data: balances } = await supabase
         .from("worker_balances")
         .select("*")

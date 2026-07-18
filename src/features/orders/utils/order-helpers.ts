@@ -5,7 +5,7 @@ import type { OrderStatus } from "@/types/database.types";
 export function getNextStatus(current: OrderStatus): OrderStatus | null {
   const idx = ORDER_STATUS_FLOW.indexOf(current);
   if (idx === -1 || idx === ORDER_STATUS_FLOW.length - 1) return null;
-  return ORDER_STATUS_FLOW[idx + 1];
+  return ORDER_STATUS_FLOW[idx + 1] ?? null;
 }
 
 /** Progress percentage (0-100) along the standard journey, for the status rail. */

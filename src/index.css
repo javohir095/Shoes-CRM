@@ -2,92 +2,87 @@
 @tailwind components;
 @tailwind utilities;
 
-/* ===========================================================
-   DESIGN TOKENS
-   Palette: steel-blue primary (#5B8DEF) for precision/trust,
-   warm leather-tan secondary (#C8A27A) nodding to the craft,
-   near-black / near-white neutrals for an Apple/Linear feel.
-   =========================================================== */
-
 @layer base {
   :root {
-    --background: 40 20% 98%;
-    --foreground: 222 20% 12%;
+    /* Light mode — warm off-white workshop palette */
+    --background: 36 33% 97%;
+    --foreground: 222 18% 12%;
 
     --card: 0 0% 100%;
-    --card-foreground: 222 20% 12%;
+    --card-foreground: 222 18% 12%;
 
     --popover: 0 0% 100%;
-    --popover-foreground: 222 20% 12%;
+    --popover-foreground: 222 18% 12%;
 
-    --primary: 221 83% 65%;
+    --primary: 230 100% 63%;
     --primary-foreground: 0 0% 100%;
 
-    --secondary: 222 18% 95%;
-    --secondary-foreground: 222 20% 18%;
+    --secondary: 36 25% 92%;
+    --secondary-foreground: 222 18% 18%;
 
-    --muted: 222 16% 95%;
-    --muted-foreground: 222 12% 46%;
+    --muted: 36 20% 94%;
+    --muted-foreground: 222 10% 45%;
 
-    --accent: 221 83% 96%;
-    --accent-foreground: 221 70% 40%;
+    --accent: 36 47% 60%;
+    --accent-foreground: 222 18% 12%;
 
-    --destructive: 0 84% 63%;
+    --destructive: 0 72% 51%;
     --destructive-foreground: 0 0% 100%;
 
-    --success: 152 60% 42%;
+    --success: 160 84% 39%;
     --success-foreground: 0 0% 100%;
 
     --warning: 38 92% 50%;
-    --warning-foreground: 38 60% 15%;
+    --warning-foreground: 222 18% 12%;
 
-    --leather: 28 38% 58%;
-    --leather-foreground: 28 40% 12%;
-
-    --border: 222 16% 89%;
-    --input: 222 16% 89%;
-    --ring: 221 83% 65%;
+    --border: 36 20% 88%;
+    --input: 36 20% 88%;
+    --ring: 230 100% 63%;
 
     --radius: 0.875rem;
+
+    --glass-bg: 0 0% 100% / 0.6;
+    --glass-border: 0 0% 100% / 0.4;
   }
 
   .dark {
-    --background: 222 28% 7%;
-    --foreground: 210 20% 96%;
+    /* Dark mode — deep charcoal workshop */
+    --background: 222 22% 7%;
+    --foreground: 36 15% 95%;
 
-    --card: 222 26% 10%;
-    --card-foreground: 210 20% 96%;
+    --card: 222 20% 10%;
+    --card-foreground: 36 15% 95%;
 
-    --popover: 222 26% 10%;
-    --popover-foreground: 210 20% 96%;
+    --popover: 222 20% 10%;
+    --popover-foreground: 36 15% 95%;
 
-    --primary: 221 83% 65%;
-    --primary-foreground: 222 30% 8%;
+    --primary: 230 100% 66%;
+    --primary-foreground: 0 0% 100%;
 
-    --secondary: 222 22% 16%;
-    --secondary-foreground: 210 20% 92%;
+    --secondary: 222 18% 15%;
+    --secondary-foreground: 36 15% 92%;
 
-    --muted: 222 20% 15%;
-    --muted-foreground: 220 12% 60%;
+    --muted: 222 16% 14%;
+    --muted-foreground: 222 10% 60%;
 
-    --accent: 221 50% 18%;
-    --accent-foreground: 221 83% 75%;
+    --accent: 36 47% 60%;
+    --accent-foreground: 222 18% 10%;
 
-    --destructive: 0 70% 58%;
+    --destructive: 0 72% 55%;
     --destructive-foreground: 0 0% 100%;
 
-    --success: 152 55% 45%;
-    --success-foreground: 152 60% 8%;
+    --success: 160 70% 45%;
+    --success-foreground: 222 18% 8%;
 
     --warning: 38 92% 55%;
-    --warning-foreground: 38 80% 10%;
+    --warning-foreground: 222 18% 8%;
 
-    --leather: 28 38% 58%;
-    --leather-foreground: 28 60% 95%;
+    --border: 222 16% 18%;
+    --input: 222 16% 18%;
+    --ring: 230 100% 66%;
 
-    --border: 222 20% 18%;
-    --input: 222 20% 18%;
-    --ring: 221 83% 65%;
+    --glass-bg: 222 20% 14% / 0.55;
+    --glass-border: 0 0% 100% / 0.06;
   }
 
   * {
@@ -95,59 +90,67 @@
   }
 
   body {
-    @apply bg-background text-foreground;
-    font-feature-settings: "rlig" 1, "calt" 1;
+    @apply bg-background text-foreground antialiased;
+    font-feature-settings: 'cv11', 'ss01';
+    font-variation-settings: 'opsz' 32;
   }
 
-  /* Visible keyboard focus everywhere */
+  ::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+  }
+  ::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  ::-webkit-scrollbar-thumb {
+    background: hsl(var(--muted-foreground) / 0.25);
+    border-radius: 9999px;
+  }
+  ::-webkit-scrollbar-thumb:hover {
+    background: hsl(var(--muted-foreground) / 0.4);
+  }
+
   :focus-visible {
     outline: 2px solid hsl(var(--ring));
     outline-offset: 2px;
     border-radius: 4px;
   }
-
-  @media (prefers-reduced-motion: reduce) {
-    *,
-    *::before,
-    *::after {
-      animation-duration: 0.01ms !important;
-      animation-iteration-count: 1 !important;
-      transition-duration: 0.01ms !important;
-      scroll-behavior: auto !important;
-    }
-  }
 }
 
 @layer components {
-  /* Glassmorphism surface */
-  .glass {
-    @apply bg-card/70 backdrop-blur-xl border border-border/60 shadow-glass;
+  .glass-panel {
+    background-color: hsl(var(--glass-bg));
+    border: 1px solid hsl(var(--glass-border));
+    backdrop-filter: blur(20px) saturate(180%);
+    -webkit-backdrop-filter: blur(20px) saturate(180%);
   }
 
-  .glass-strong {
-    @apply bg-card/85 backdrop-blur-2xl border border-border/70 shadow-glass-lg;
-  }
-
-  /* Skeleton loading shimmer */
   .skeleton {
-    @apply relative overflow-hidden bg-muted rounded-md;
+    position: relative;
+    overflow: hidden;
+    background-color: hsl(var(--muted));
+  }
+  .skeleton::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    transform: translateX(-100%);
     background-image: linear-gradient(
       90deg,
-      hsl(var(--muted)) 0%,
-      hsl(var(--secondary)) 50%,
-      hsl(var(--muted)) 100%
+      transparent,
+      hsl(var(--foreground) / 0.06),
+      transparent
     );
-    background-size: 200% 100%;
-    @apply animate-shimmer;
+    animation: shimmer 1.6s infinite;
   }
 }
 
-@layer utilities {
-  .scrollbar-none::-webkit-scrollbar {
-    display: none;
-  }
-  .scrollbar-none {
-    -ms-overflow-style: none;
-    scrollbar-width: none;
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
   }
 }
