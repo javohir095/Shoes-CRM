@@ -14,21 +14,28 @@ export async function updateCompanyBotUsername(companyId: string, username: stri
   await supabase.from('companies').update({ bot_username: username }).eq('id', companyId)
 }
 
-export async function findOrderByNumber(orderNumber: string): Promise<Order | null> {
+// order_number is only unique per company (UNIQUE(company_id, order_number)),
+// not globally — two companies can both have e.g. "SH-20260718-0001" as
+// their first order of the day. Each bot instance belongs to exactly one
+// company, so lookups must be scoped to it or a cross-company collision
+// makes maybeSingle() see >1 row and silently report "not found".
+export async function findOrderByNumber(orderNumber: string, companyId: string): Promise<Order | null> {
   const { data, error } = await supabase
     .from('orders')
     .select('*')
+    .eq('company_id', companyId)
     .ilike('order_number', orderNumber.trim())
     .maybeSingle()
   if (error) return null
   return data as Order | null
 }
 
-export async function findOrdersByTelegramId(telegramId: string): Promise<Order[]> {
+export async function findOrdersByTelegramId(telegramId: string, companyId: string): Promise<Order[]> {
   const { data, error } = await supabase
     .from('orders')
     .select('*')
     .eq('telegram_id', telegramId)
+    .eq('company_id', companyId)
     .order('created_at', { ascending: false })
     .limit(10)
   if (error) return []

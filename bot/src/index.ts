@@ -28,8 +28,8 @@ async function startCompanyBot(company: Company): Promise<void> {
 
   const bot = new Telegraf(company.bot_token)
 
-  bot.start(handleStart)
-  bot.on('text', handleText)
+  bot.start((ctx) => handleStart(ctx, company.id))
+  bot.on('text', (ctx) => handleText(ctx, company.id))
 
   bot.catch((err, ctx) => {
     console.error(`[Bot][${company.name}] Error for update ${ctx.update.update_id}:`, err)

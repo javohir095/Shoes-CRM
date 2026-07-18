@@ -26,14 +26,14 @@ function formatOrderMessage(order: {
   )
 }
 
-export async function handleStart(ctx: Context) {
+export async function handleStart(ctx: Context, companyId: string) {
   const telegramId = String(ctx.from?.id)
 
   // Deep-link from a scanned order QR code: /start SH-YYYYMMDD-XXXX
   const startText = ctx.message && 'text' in ctx.message ? ctx.message.text : ''
   const startPayload = startText.replace(/^\/start(@\w+)?\s*/, '').trim()
   if (startPayload && /^SH-\d{8}-\d{4}$/i.test(startPayload)) {
-    const order = await findOrderByNumber(startPayload.toUpperCase())
+    const order = await findOrderByNumber(startPayload.toUpperCase(), companyId)
     if (order) {
       if (!order.telegram_id) {
         await linkTelegramToOrder(order.id, telegramId)
@@ -49,7 +49,7 @@ export async function handleStart(ctx: Context) {
   }
 
   // Check if user has existing orders
-  const existingOrders = await findOrdersByTelegramId(telegramId)
+  const existingOrders = await findOrdersByTelegramId(telegramId, companyId)
 
   if (existingOrders.length > 0) {
     const activeOrders = existingOrders.filter(
@@ -80,7 +80,7 @@ export async function handleStart(ctx: Context) {
   )
 }
 
-export async function handleText(ctx: Context) {
+export async function handleText(ctx: Context, companyId: string) {
   if (!ctx.message || !('text' in ctx.message)) return
 
   const text = ctx.message.text.trim()
@@ -88,7 +88,7 @@ export async function handleText(ctx: Context) {
 
   // Check if it looks like an order number
   if (/^SH-\d{8}-\d{4}$/i.test(text)) {
-    const order = await findOrderByNumber(text.toUpperCase())
+    const order = await findOrderByNumber(text.toUpperCase(), companyId)
 
     if (!order) {
       await ctx.reply(
