@@ -2,13 +2,15 @@
  * notifyWorker.ts
  *
  * Subscribes to Supabase Realtime on the orders table.
- * When an order's status changes to 'tayyor' AND the order has a telegram_id,
- * sends a Telegram notification using the company's bot token.
+ * - status -> 'tayyor': notifies the customer their order is ready to pick up.
+ * - status -> 'topshirildi': asks the customer to rate the service 1-5 stars
+ *   (tapping a star is handled by the interactive bot's callback_query
+ *   listener in index.ts, not here — this process only sends messages).
  */
 import 'dotenv/config'
 import { Telegraf } from 'telegraf'
 import { supabase } from './supabase.js'
-import { getReadyNotificationText } from './handlers.js'
+import { buildRatingKeyboard, getRatingRequestText, getReadyNotificationText } from './handlers.js'
 
 interface OrderPayload {
   id: string
@@ -52,9 +54,30 @@ async function sendReadyNotification(order: OrderPayload): Promise<void> {
       getReadyNotificationText(order.order_number),
       { parse_mode: 'Markdown' }
     )
-    console.log(`[Notify] ✅ Sent notification to ${order.telegram_id} for order ${order.order_number}`)
+    console.log(`[Notify] ✅ Sent "ready" notification to ${order.telegram_id} for order ${order.order_number}`)
   } catch (err) {
     console.error(`[Notify] ❌ Failed to send to ${order.telegram_id}:`, err)
+  }
+}
+
+async function sendRatingRequest(order: OrderPayload): Promise<void> {
+  if (!order.telegram_id) return
+
+  const bot = await getBotForCompany(order.company_id)
+  if (!bot) {
+    console.warn(`[Notify] No bot token for company ${order.company_id}`)
+    return
+  }
+
+  try {
+    await bot.telegram.sendMessage(
+      order.telegram_id,
+      getRatingRequestText(order.order_number),
+      { parse_mode: 'Markdown', reply_markup: buildRatingKeyboard(order.id) }
+    )
+    console.log(`[Notify] ✅ Sent rating request to ${order.telegram_id} for order ${order.order_number}`)
+  } catch (err) {
+    console.error(`[Notify] ❌ Failed to send rating request to ${order.telegram_id}:`, err)
   }
 }
 
@@ -75,6 +98,21 @@ async function main() {
         const order = payload.new as OrderPayload
         if (order.telegram_id) {
           void sendReadyNotification(order)
+        }
+      }
+    )
+    .on(
+      'postgres_changes',
+      {
+        event: 'UPDATE',
+        schema: 'public',
+        table: 'orders',
+        filter: 'status=eq.topshirildi',
+      },
+      (payload) => {
+        const order = payload.new as OrderPayload
+        if (order.telegram_id) {
+          void sendRatingRequest(order)
         }
       }
     )

@@ -1,7 +1,7 @@
 import 'dotenv/config'
 import { Telegraf } from 'telegraf'
 import { getAllCompaniesWithBots, updateCompanyBotUsername } from './db.js'
-import { handleStart, handleText } from './handlers.js'
+import { handleRatingCallback, handleStart, handleText } from './handlers.js'
 import type { Company } from './types.js'
 
 // Registry of running bot instances keyed by company ID, along with the
@@ -30,6 +30,7 @@ async function startCompanyBot(company: Company): Promise<void> {
 
   bot.start((ctx) => handleStart(ctx, company.id))
   bot.on('text', (ctx) => handleText(ctx, company.id))
+  bot.on('callback_query', handleRatingCallback)
 
   bot.catch((err, ctx) => {
     console.error(`[Bot][${company.name}] Error for update ${ctx.update.update_id}:`, err)

@@ -8,6 +8,7 @@ export interface Company {
 export interface Order {
   id: string
   company_id: string
+  created_by: string
   order_number: string
   customer_name: string
   customer_phone: string

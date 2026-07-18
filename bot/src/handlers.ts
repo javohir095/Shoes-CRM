@@ -1,5 +1,7 @@
 import type { Context } from 'telegraf'
-import { findOrderByNumber, findOrdersByTelegramId, linkTelegramToOrder } from './db.js'
+import {
+  findOrderById, findOrderByNumber, findOrdersByTelegramId, linkTelegramToOrder, rateOrder,
+} from './db.js'
 import { STATUS_LABELS } from './types.js'
 
 function formatOrderMessage(order: {
@@ -120,5 +122,51 @@ export function getReadyNotificationText(orderNumber: string): string {
     `Sizning buyurtmangiz tayyor!\n\n` +
     `📦 Buyurtma raqami: \`${orderNumber}\`\n\n` +
     `Iltimos, filialga tashrif buyuring va buyurtmangizni olib keting. 🙏`
+  )
+}
+
+export function getRatingRequestText(orderNumber: string): string {
+  return (
+    `🙏 *Buyurtmangiz uchun rahmat!*\n\n` +
+    `📦 Buyurtma raqami: \`${orderNumber}\`\n\n` +
+    `Xizmat sifatini 1 dan 5 yulduzgacha baholab bera olasizmi?`
+  )
+}
+
+export function buildRatingKeyboard(orderId: string) {
+  return {
+    inline_keyboard: [
+      [1, 2, 3, 4, 5].map((n) => ({
+        text: '⭐'.repeat(n),
+        callback_data: `rate:${orderId}:${n}`,
+      })),
+    ],
+  }
+}
+
+export async function handleRatingCallback(ctx: Context) {
+  if (!ctx.callbackQuery || !('data' in ctx.callbackQuery)) return
+  const match = /^rate:([0-9a-f-]+):([1-5])$/i.exec(ctx.callbackQuery.data)
+  if (!match) return
+
+  const [, orderId, ratingStr] = match
+  const rating = Number(ratingStr)
+
+  const order = await findOrderById(orderId)
+  if (!order) {
+    await ctx.answerCbQuery('Buyurtma topilmadi')
+    return
+  }
+
+  const { error } = await rateOrder(orderId, order.created_by, order.company_id, rating)
+  if (error) {
+    await ctx.answerCbQuery('Xatolik yuz berdi, keyinroq urinib ko\'ring')
+    return
+  }
+
+  await ctx.answerCbQuery('Rahmat!')
+  await ctx.editMessageText(
+    `${'⭐'.repeat(rating)}\n\nBahoyingiz uchun rahmat! 🙏`,
+    { parse_mode: 'Markdown' }
   )
 }

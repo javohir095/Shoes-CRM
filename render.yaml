@@ -11,3 +11,20 @@ services:
         sync: false
       - key: SUPABASE_SERVICE_ROLE_KEY
         sync: false
+
+  # Separate process: listens for order status changes via Supabase Realtime
+  # and pushes "tayyor" / rating-request messages. Star-tap responses are
+  # still handled by solecare-telegram-bot above (it's the one polling for
+  # Telegram updates); this one only sends.
+  - type: worker
+    name: solecare-bot-notifier
+    runtime: node
+    rootDir: bot
+    plan: starter
+    buildCommand: npm install
+    startCommand: npm run notify-worker
+    envVars:
+      - key: SUPABASE_URL
+        sync: false
+      - key: SUPABASE_SERVICE_ROLE_KEY
+        sync: false

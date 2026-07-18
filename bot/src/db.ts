@@ -46,6 +46,28 @@ export async function linkTelegramToOrder(orderId: string, telegramId: string): 
   await supabase.from('orders').update({ telegram_id: telegramId }).eq('id', orderId)
 }
 
+export async function findOrderById(orderId: string): Promise<Order | null> {
+  const { data, error } = await supabase.from('orders').select('*').eq('id', orderId).maybeSingle()
+  if (error) return null
+  return data as Order | null
+}
+
+/** Upsert so a customer re-tapping a star button updates their rating instead of erroring (order_id is UNIQUE). */
+export async function rateOrder(
+  orderId: string,
+  workerId: string,
+  companyId: string,
+  rating: number
+): Promise<{ error: string | null }> {
+  const { error } = await supabase
+    .from('order_ratings')
+    .upsert(
+      { order_id: orderId, worker_id: workerId, company_id: companyId, rating },
+      { onConflict: 'order_id' }
+    )
+  return { error: error?.message ?? null }
+}
+
 export async function getPendingNotifications(): Promise<Order[]> {
   // Get orders that just became 'tayyor' and have telegram_id
   // We use a simple approach: check orders with tayyor status and telegram_id
