@@ -89,11 +89,51 @@ export default {
           "0%": { backgroundPosition: "-200% 0" },
           "100%": { backgroundPosition: "200% 0" },
         },
+        // Opacity-only — safe for Radix Popper content (Select/Popover/
+        // DropdownMenu), which positions itself via an inline `transform`.
+        // A keyframe that also animates `transform` briefly overrides that
+        // inline positioning for the animation's duration, so the popup
+        // visually jumps from the wrong spot to the right one every time
+        // it opens — enough to make a tap land somewhere unintended.
+        "popper-in": {
+          "0%": { opacity: "0" },
+          "100%": { opacity: "1" },
+        },
+        "popper-out": {
+          "0%": { opacity: "1" },
+          "100%": { opacity: "0" },
+        },
+        "overlay-in": {
+          "0%": { opacity: "0" },
+          "100%": { opacity: "1" },
+        },
+        "overlay-out": {
+          "0%": { opacity: "1" },
+          "100%": { opacity: "0" },
+        },
+        // Dialog content centers itself with a static translate(-50%,-50%);
+        // the centering offset is baked into both ends of this keyframe so
+        // it never gets clobbered mid-animation the way fade-in's transform
+        // did.
+        "dialog-in": {
+          "0%": { opacity: "0", transform: "translate(-50%, -50%) scale(0.96)" },
+          "100%": { opacity: "1", transform: "translate(-50%, -50%) scale(1)" },
+        },
+        "dialog-out": {
+          "0%": { opacity: "1", transform: "translate(-50%, -50%) scale(1)" },
+          "100%": { opacity: "0", transform: "translate(-50%, -50%) scale(0.96)" },
+        },
       },
       animation: {
         "fade-in": "fade-in 0.4s ease-out",
         "scale-in": "scale-in 0.2s ease-out",
         shimmer: "shimmer 2s linear infinite",
+        "popper-in": "popper-in 0.15s ease-out",
+        "popper-out": "popper-out 0.1s ease-in",
+        "overlay-in": "overlay-in 0.2s ease-out",
+        "overlay-out": "overlay-out 0.15s ease-in",
+        "dialog-in": "dialog-in 0.2s cubic-bezier(0.16, 1, 0.3, 1)",
+        "dialog-out": "dialog-out 0.15s ease-in",
       },
     },
   },
