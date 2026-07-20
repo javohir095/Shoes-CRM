@@ -39,7 +39,9 @@ const createSchema = z.object({
   company_id: z.string().min(1, 'Kompaniyani tanlang'),
   fullname: z.string().min(2, "Ism kamida 2 belgidan iborat bo'lsin"),
   phone: z.string().min(9, "Telefon raqami noto'g'ri"),
-  email: z.string().email("Email noto'g'ri formatda"),
+  login: z.string()
+    .min(3, "Login kamida 3 belgidan iborat bo'lsin")
+    .regex(/^[a-z0-9_.]+$/i, "Login faqat harf, raqam, _ va . belgilaridan iborat bo'lsin"),
   password: z.string().min(6, "Parol kamida 6 belgidan iborat bo'lsin"),
   role: z.enum(['worker', 'admin', 'director']),
   branch_id: z.string().optional(),
@@ -54,7 +56,19 @@ const ROLE_BADGE: Record<UserRole, 'default' | 'secondary' | 'outline'> = {
 }
 
 export function WorkersPage() {
-  const { isSuperAdmin, isAdmin, companyId } = useAuth()
+  const { isSuperAdmin, isAdmin, role, companyId } = useAuth()
+  const creatableRoles: { value: CreateValues['role']; label: string }[] = isSuperAdmin
+    ? [
+        { value: 'worker', label: 'Ishchi' },
+        { value: 'admin', label: 'Admin' },
+        { value: 'director', label: 'Direktor' },
+      ]
+    : role === 'director'
+      ? [
+          { value: 'worker', label: 'Ishchi' },
+          { value: 'admin', label: 'Admin' },
+        ]
+      : [{ value: 'worker', label: 'Ishchi' }]
   const updateWorker = useUpdateWorker()
   const deleteWorker = useDeleteWorker()
   const { data: companies } = useAllCompanies()
@@ -88,7 +102,7 @@ export function WorkersPage() {
     formState: { errors },
   } = useForm<CreateValues>({
     resolver: zodResolver(createSchema),
-    defaultValues: { company_id: companyId ?? '', fullname: '', phone: '', email: '', password: '', role: 'worker' },
+    defaultValues: { company_id: companyId ?? '', fullname: '', phone: '', login: '', password: '', role: 'worker' },
   })
   const roleValue = watch('role')
   const selectedCompanyId = watch('company_id')
@@ -97,40 +111,30 @@ export function WorkersPage() {
   const onCreateSubmit = async (values: CreateValues) => {
     setIsCreating(true)
     try {
-      const { data: authData, error: authError } = await supabase.auth.signUp({
-        email: values.email,
-        password: values.password,
+      // Creating a login-only account (no real email) has to go through a
+      // service-role Edge Function: Supabase's public signUp() validates
+      // the derived pseudo-email's domain and rejects it outright, while
+      // auth.admin.createUser() (server-side only) does not.
+      const { data, error } = await supabase.functions.invoke('create-staff', {
+        body: {
+          login: values.login,
+          password: values.password,
+          fullname: values.fullname,
+          phone: values.phone,
+          role: values.role,
+          branch_id: values.branch_id || null,
+          company_id: values.company_id,
+        },
       })
-      if (authError) throw authError
-      if (!authData.user) throw new Error('Foydalanuvchi yaratilmadi')
-
-      // Supabase silently returns the *existing* account (with an empty
-      // identities array) for an already-registered email instead of
-      // erroring, to avoid leaking which emails are taken. Without this
-      // check we'd try to insert a second profile for that same id and
-      // get a confusing 409 from PostgREST.
-      if (authData.user.identities && authData.user.identities.length === 0) {
-        throw new Error('Bu email allaqachon roʻyxatdan oʻtgan. Boshqa email manzilidan foydalaning.')
+      if (error) {
+        const message = (await error.context?.json?.().catch(() => null))?.error
+        throw new Error(message || error.message)
       }
-
-      const { error: profileError } = await supabase.from('users').insert({
-        id: authData.user.id,
-        company_id: values.company_id,
-        branch_id: values.branch_id || null,
-        fullname: values.fullname,
-        phone: values.phone,
-        role: values.role,
-      })
-      if (profileError) {
-        if (profileError.code === '23505') {
-          throw new Error('Bu email allaqachon roʻyxatdan oʻtgan. Boshqa email manzilidan foydalaning.')
-        }
-        throw profileError
-      }
+      if (data?.error) throw new Error(data.error)
 
       toast.success(`${values.fullname} qo'shildi`)
       setCreateOpen(false)
-      reset({ company_id: companyId ?? '', fullname: '', phone: '', email: '', password: '', role: 'worker' })
+      reset({ company_id: companyId ?? '', fullname: '', phone: '', login: '', password: '', role: 'worker' })
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Xodim qo'shishda xatolik")
     } finally {
@@ -295,9 +299,15 @@ export function WorkersPage() {
               {errors.phone && <p className="text-xs text-destructive">{errors.phone.message}</p>}
             </div>
             <div className="space-y-1.5">
-              <Label>Email</Label>
-              <Input type="email" placeholder="ishchi@example.com" {...register('email')} />
-              {errors.email && <p className="text-xs text-destructive">{errors.email.message}</p>}
+              <Label>Login</Label>
+              <Input
+                type="text"
+                placeholder="sardor"
+                autoComplete="username"
+                autoCapitalize="none"
+                {...register('login')}
+              />
+              {errors.login && <p className="text-xs text-destructive">{errors.login.message}</p>}
             </div>
             <div className="space-y-1.5">
               <Label>Parol</Label>
@@ -310,9 +320,9 @@ export function WorkersPage() {
                 <Select value={roleValue} onValueChange={(v) => setValue('role', v as CreateValues['role'])}>
                   <SelectTrigger><SelectValue /></SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="worker">Ishchi</SelectItem>
-                    <SelectItem value="admin">Admin</SelectItem>
-                    <SelectItem value="director">Direktor</SelectItem>
+                    {creatableRoles.map((r) => (
+                      <SelectItem key={r.value} value={r.value}>{r.label}</SelectItem>
+                    ))}
                   </SelectContent>
                 </Select>
               </div>
